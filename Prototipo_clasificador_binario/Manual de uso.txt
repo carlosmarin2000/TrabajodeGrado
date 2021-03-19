@@ -1,0 +1,52 @@
+************************MANUAL DE USO - CLASIFICADOR BINARIO*****************************
+Codigo de programa: se debe escoger el código de programa al que pertenece el estudiante.
+Entre las opciones están:
+2710 - Tecnología electrónica
+2711 - Tecnología en sistemas de información
+2712 - Tecnología en alimentos
+3249 - Trabajo social
+3743 - Ingeniería de sistemas
+3841 - Contaduría pública
+3845 - Administración de empresas
+
+
+Tipo de programa: se debe escoger el tipo de programa al que pertenece el estudiante, de 
+pregrado o tecnológico.
+
+Jornada: tipo de jornada en la que se encuentra matriculado el estudiante.
+
+Periodo de admisión: el periodo académico en el cual fue admitido el estudiante.
+
+Sexo: género del estudiante.
+
+Edad de ingreso: edad con la que ingresó el estudiante.(Ejemplo: 16)
+
+Situación de BRA: cantidad de bajos rendimientos que tenga el estudiante hasta el momento.
+
+Ciudad de residencia: la ciudad donde actualmente se encuentra viviendo el estudiante.
+
+Tipo de zona: tipo de zona en la que se encuentra viviendo el estudiante.
+
+Número de asignaturas matriculadas por periodo académico: la cantidad promedio de 
+asignaturas matriculas por periodo académico (Ejemplo: 6 o en el caso de decimales 6.4)
+
+Promedio general del estudiante: el promedio general del estudiante hasta el momento 
+(Ejemplo: 3.5)
+
+Promedio de créditos matriculados por periodo: la cantidad promedio de créditos 
+matriculados por periodo académico (Ejemplo: 15.2)
+
+Proporción créditos matriculados por aprobados: se debe ingresar la proporción de créditos
+matriculados por aprobados que se obtiene de la razón entre créditos matriculados y 
+créditos aprobados (Ejemplo: 0.5 [el cual se obtiene de 8/16])
+
+Condición de excepción: se debe ingresar si el estudiante cuenta con algún tipo de 
+condición de excepción o no.
+
+Después de haber ingresado los respectivos datos, proceda a dar click en el botón 
+"Predicción", a continuación aparecerá un label debajo de este donde se indicará si el 
+estudiante tiende o no a desertar.
+
+
+
+
