@@ -11,55 +11,140 @@ from tkinter import ttk
 import tkinter as tk
 import tkinter.font as tkFont
 
-import pandas as pd
+#Tratamiento de los datos
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
+import pandas as pd
+import statsmodels.api as sm
+
+#Graficos
+import matplotlib.pyplot as plt
+
+#Preprocesamiento de los datos
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import plot_tree
+from sklearn import tree
+from sklearn import metrics
+from sklearn.preprocessing import OneHotEncoder
 import sklearn.metrics as skM
+
+#Metricas del modelo
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+
+#confi warnings
+import warnings
+warnings.filterwarnings('once')
 
 def botonAcc():
     #Datos
-    datos = pd.read_csv('base_datos.csv', encoding = "ISO-8859-1", engine='python')
+    #Se lee el archivo csv con la base de conocimiento
+    datos = pd.read_csv('base_datos_py.csv', encoding = "ISO-8859-1", engine='python')
     df=pd.DataFrame(datos)
+
+    #Se crea un dataframe que contiene los datos de los estudiantes que desertaron
+    y = df['DesertoNum']
     
-    codigo=df['Codigo de programa'].values
-    tipoProg=df['Tipo de programa'].values
-    jornada=df['Jornada'].values
-    periodoAd=df['Periodo de admision'].values
-    sexo=df['Sexo'].values
-    edadIng=df['Edad de ingreso'].values
-    bra=df['Situacion de BRA'].values
-    excep=df['Condicion de excepcion'].values
-    residenc=df['Ciudad residencia'].values
-    zona=df['Tipo de zona'].values
-    matriculasxper=df['Numero de asignaturas matriculadas por periodo academico'].values
-    promedioGen=df['Promedio general del estudiante'].values
-    promedioCred=df['Promedio de creditos matriculados por periodo'].values
-    credAprob=df['Proporcion creditos matriculado por aprobados'].values
-    grado=df['Graduado'].values
-    y=df['Deserto'].values
+    #Se pasan los datos categoricos a one-hot-encoder
+    codigoDummy = pd.get_dummies(df['Codigo de programa'])
+    tipoProgramaDummy = pd.get_dummies(df['Tipo de programa'])
+    jornadaDummy = pd.get_dummies(df['Jornada'])
+    sexoDummy = pd.get_dummies(df['Sexo'])
+    ciudadDummy = pd.get_dummies(df['Ciudad residencia'])
+    zonaDummy = pd.get_dummies(df['Tipo de zona'])
+    graduadoDummy = pd.get_dummies(df['Graduado'])
+    
+    #Se dropean los datos del archivo csv innecesarios
+    df = df.drop(['Tipo de programaNum'], axis='columns')
+    df = df.drop(['JornadaNum'], axis='columns')
+    df = df.drop(['SexoNum'], axis='columns')
+    df = df.drop(['Ciudad residenciaNum'], axis='columns')
+    df = df.drop(['Tipo de zonaNum'], axis='columns')
+    df = df.drop(['GraduadoNum'], axis='columns')
+    df = df.drop(['DesertoNum'], axis='columns')
+    df = df.drop(['Deserto'], axis='columns')
+    df = df.drop(['Tipo de programa'], axis='columns')
+    df = df.drop(['Jornada'], axis='columns')
+    df = df.drop(['Sexo'], axis='columns')
+    df = df.drop(['Ciudad residencia'], axis='columns')
+    df = df.drop(['Tipo de zona'], axis='columns')
+    df = df.drop(['Graduado'], axis='columns')
+    df = df.drop(['ID'], axis='columns')
+    df = df.drop(['Creditos del programa'], axis='columns')
+    df = df.drop(['Anno de admision'], axis='columns')
+    df = df.drop(['Numero periodos matriculados'], axis='columns')
+    df = df.drop(['Asignaturas por estudiante'], axis='columns')
+    df = df.drop(['Cantidad de creditos aprobados'], axis='columns')
+    df = df.drop(['Cantidad de creditos matriculados'], axis='columns')
+    df = df.drop(['Numero periodos por estudiante'], axis='columns')
+    df = df.drop(['Codigo de programa'], axis='columns')
+    
+    #Se construye el data set final
+    datasetFinal = pd.concat([df, codigoDummy, tipoProgramaDummy, jornadaDummy, sexoDummy,
+                              ciudadDummy, zonaDummy, graduadoDummy], axis='columns')
+    
+    
    
-    #Construcción del dataset de acuerdo al dataframe
-    X=np.array(list(zip(codigo,tipoProg,jornada,periodoAd,sexo,edadIng,bra,excep,residenc,zona,matriculasxper,promedioGen,promedioCred,credAprob,grado)))
     
-    #Split de los datos de entrenamiento y testeo
-    X_train, X_test, y_train, y_test = train_test_split(X, y,
+
+    #Split de los datos de entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(datasetFinal, y,
                                                         test_size = 0.25,
                                                         random_state = 42,
                                                         stratify = y)
+
+    tecElec = 0.0
+    tecSis = 0.0
+    tecAlim = 0.0
+    trabSoci = 0.0
+    ingSis = 0.0
+    ingAlim = 0.0
+    contadur = 0.0
+    admin = 0.0
     
     #Variables predicción
     codigoPred= float(comboCodProg.get())
     
+    if codigoPred == 2710.0 :
+        tecElec = 1.0
+        
+    if codigoPred == 2711.0 :
+        tecSis = 1.0
+        
+    if codigoPred == 2712.0 :
+        tecAlim = 1.0
+        
+    if codigoPred == 3249.0 :
+        trabSoci = 1.0
+        
+    if codigoPred == 3743.0 :
+        ingAlim = 1.0
+        
+    if codigoPred == 3753.0 :
+        ingSis = 1.0
+        
+    if codigoPred == 3841.0 :
+        contadur = 1.0
+        
+    else: 
+        admin = 1.0
+    
     if comboTipoProg.get() == "1 (Pregrado)":
-        tipoProgPred= 1.0
+        pregra = 1.0
+        tecno = 0.0
     else:
-        tipoProgPred= 2.0
+        tecno = 1.0
+        pregra = 0.0
     
     if comboJornada.get() == "1 (Diurno)":
-        jornadaPred= 1.0
+        diurn = 1.0
+        nocturn = 0.0
     else:
-        jornadaPred= 2.0
+        nocturn = 1.0
+        diurn = 0.0
         
     if comboPeriodoAdmi.get() == "1 (Primer periodo)":
         periodoAdPred= 1.0
@@ -67,9 +152,11 @@ def botonAcc():
         periodoAdPred= 2.0
     
     if comboSexo.get() == "1 (Masculino)":
-        sexoPred= 1.0
+        mascul = 1.0
+        femen = 0.0
     else:
-        sexoPred= 2.0
+        femen = 1.0
+        mascul = 0.0
       
     edadIngPred= float(edad.get())
     
@@ -81,14 +168,18 @@ def botonAcc():
         excepPred= 1.0
         
     if comboCity.get() == "1 (Tuluá)":
-        residencPred= 1.0
+        tulua = 1.0
+        otro = 0.0
     else:
-        residencPred= 2.0
+        otro = 1.0
+        tulua = 0.0
     
     if comboTipoZona.get() == "1 (Urbana)":
-        zonaPred= 1.0
+        urbana = 1.0
+        rural = 0.0
     else:
-        zonaPred= 2.0 
+        rural = 1.0 
+        urbana = 0.0
         
     matriculasxperPred= float(matrixPer.get())
     
@@ -98,7 +189,8 @@ def botonAcc():
     
     credAprobPred= float(credAproba.get())
     
-    gradoPred= 0.0 
+    si = 0.0
+    no = 1.0
         
     #Fin datos prediccion
     
@@ -108,7 +200,9 @@ def botonAcc():
     algo.fit(X_train, y_train)
     
     #datos ingresados sobre el estudiante
-    student = np.array([codigoPred,tipoProgPred,jornadaPred,periodoAdPred,sexoPred,edadIngPred,braPred,excepPred,residencPred,zonaPred,matriculasxperPred,promedioGenPred,promedioCredPred,credAprobPred,gradoPred])
+    student = np.array([periodoAdPred,edadIngPred,braPred,excepPred,matriculasxperPred,promedioGenPred,promedioCredPred,
+                        credAprobPred,tecElec,tecSis,tecAlim,trabSoci,ingSis,ingAlim,contadur,admin,pregra,tecno,diurn,
+                        nocturn,femen,mascul,otro,tulua,rural,urbana,no,si])
     
     matrEst = np.array([student,student])
     

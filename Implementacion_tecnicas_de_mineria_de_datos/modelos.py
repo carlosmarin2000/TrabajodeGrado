@@ -8,115 +8,192 @@ Created on Thu Dec  3 22:39:01 2020
 Universidad del Valle sede Tuluá
 """
 
-import pandas as pd
+#Tratamiento de los datos
 import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+
+#Graficos
 import matplotlib.pyplot as plt
+
+#Preprocesamiento de los datos
 from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-import sklearn.metrics as skM
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import plot_tree
+from sklearn import tree
+from sklearn import metrics
+from sklearn.preprocessing import OneHotEncoder
+import sklearn.metrics as skM
 
-import seaborn as sns; sns.set(font_scale=1.2)
+#Metricas del modelo
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
 
-#DataFrame
-datos = pd.read_csv('base_datos.csv', encoding = "ISO-8859-1", engine='python')
+import sklearn.metrics as skM
+from sklearn.svm import SVC
+
+
+#confi warnings
+
+import warnings
+warnings.filterwarnings('once')
+
+#Se lee el archivo csv con la base de conocimiento
+datos = pd.read_csv('base_datos_py.csv', encoding = "ISO-8859-1", engine='python')
 df=pd.DataFrame(datos)
 
-#se asignan los valores de cada campo
-#ident=df['ID'].values
-codigo=df['Codigo de programa'].values
-tipoProg=df['Tipo de programa'].values
-jornada=df['Jornada'].values
-periodoAd=df['Periodo de admision'].values
-sexo=df['Sexo'].values
-edadIng=df['Edad de ingreso'].values
-bra=df['Situacion de BRA'].values
-excep=df['Condicion de excepcion'].values
-residenc=df['Ciudad residencia'].values
-zona=df['Tipo de zona'].values
-matriculasxper=df['Numero de asignaturas matriculadas por periodo academico'].values
-promedioGen=df['Promedio general del estudiante'].values
-promedioCred=df['Promedio de creditos matriculados por periodo'].values
-credAprob=df['Proporcion creditos matriculado por aprobados'].values
-grado=df['Graduado'].values
-y=df['Deserto'].values
+#Se crea un dataframe que contiene los datos de los estudiantes que desertaron
+y = df['DesertoNum']
 
-#Construcción del dataset de acuerdo al dataframe
-X=np.array(list(zip(codigo,tipoProg,jornada,periodoAd,sexo,edadIng,bra,excep,residenc,zona,matriculasxper,promedioGen,promedioCred,credAprob,grado)))
 
-#Split de los datos de entrenamiento y testeo
-X_train, X_test, y_train, y_test = train_test_split(X, y,
+#Se pasan los datos categoricos a one-hot-encoder
+codigoDummy = pd.get_dummies(df['Codigo de programa'])
+tipoProgramaDummy = pd.get_dummies(df['Tipo de programa'])
+jornadaDummy = pd.get_dummies(df['Jornada'])
+sexoDummy = pd.get_dummies(df['Sexo'])
+ciudadDummy = pd.get_dummies(df['Ciudad residencia'])
+zonaDummy = pd.get_dummies(df['Tipo de zona'])
+graduadoDummy = pd.get_dummies(df['Graduado'])
+
+#Se dropean los datos del archivo csv innecesarios
+df = df.drop(['Tipo de programaNum'], axis='columns')
+df = df.drop(['JornadaNum'], axis='columns')
+df = df.drop(['SexoNum'], axis='columns')
+df = df.drop(['Ciudad residenciaNum'], axis='columns')
+df = df.drop(['Tipo de zonaNum'], axis='columns')
+df = df.drop(['GraduadoNum'], axis='columns')
+df = df.drop(['DesertoNum'], axis='columns')
+df = df.drop(['Deserto'], axis='columns')
+df = df.drop(['Tipo de programa'], axis='columns')
+df = df.drop(['Jornada'], axis='columns')
+df = df.drop(['Sexo'], axis='columns')
+df = df.drop(['Ciudad residencia'], axis='columns')
+df = df.drop(['Tipo de zona'], axis='columns')
+df = df.drop(['Graduado'], axis='columns')
+df = df.drop(['ID'], axis='columns')
+df = df.drop(['Creditos del programa'], axis='columns')
+df = df.drop(['Anno de admision'], axis='columns')
+df = df.drop(['Numero periodos matriculados'], axis='columns')
+df = df.drop(['Asignaturas por estudiante'], axis='columns')
+df = df.drop(['Cantidad de creditos aprobados'], axis='columns')
+df = df.drop(['Cantidad de creditos matriculados'], axis='columns')
+df = df.drop(['Numero periodos por estudiante'], axis='columns')
+df = df.drop(['Codigo de programa'], axis='columns')
+
+#Se construye el data set final
+datasetFinal = pd.concat([df, codigoDummy, tipoProgramaDummy, jornadaDummy, sexoDummy,
+                          ciudadDummy, zonaDummy, graduadoDummy], axis='columns')
+
+
+#Split de los datos de entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(datasetFinal, y,
                                                     test_size = 0.25,
                                                     random_state = 42,
                                                     stratify = y)
 
+#Algoritmo de decision
+algoritmo = DecisionTreeClassifier(criterion='entropy', splitter="best", max_depth=10)
+
+#Entrenamiento del modelo utilizado
+algoritmo.fit(X_train, y_train)
+
+#Algoritmo de predicción
+y_pred = algoritmo.predict(X_test)
+
+
 #Se pasan los datos al SVM
 svm = SVC(kernel='linear', )
 svm.fit(X_train, y_train)
-#print(svm.score(X_test,y_test))
-
-#Se pasan los datos al Árbol de decisión
-algo = DecisionTreeClassifier(criterion='entropy', splitter="best", max_depth=10)
-algo.fit(X_train, y_train)
-
-#Se hacen las respectivas pruebas
-#SVM
 predic = svm.predict(X_test)
 
-#Árbol de decisión
-predicAr = algo.predict(X_test)
 
 print("********Árbol de decisión***********")
-matriz = skM.confusion_matrix(y_test,predicAr)
-print("Matriz:")
+matriz = confusion_matrix(y_test, y_pred)
+print("Matriz de confusion")
 print(matriz)
+print()
 
-print("Presicion:")
-precision = skM.precision_score(y_test,predicAr)
+#Relacion entre las predicciones correctas y el numero total de predicciones
+#Con que frecuencia es correcto el clasificador
+exactitud = accuracy_score(y_test, y_pred)
+print("Exactitud del modelo") #vp+vn/vp+fp+fn+vn
+print(exactitud)
+print()
+
+#Relacion entre las predicciones correctas y el numero total de predicciones
+#correctas previstas, mide la precision del modelo a la hora de predecir casos positivos
+precision = precision_score(y_test, y_pred)
+print("Presicion del modelo")
 print(precision)
+print()
 
-print("Recall score:")
-recall = skM.recall_score(y_test,predicAr)
-print(recall)
+#Relacion entre las predicciones positivas correctas y el numero total de predicciones
+#positivas o cuan sensible es el modelo para detectar instancias positivas.
+sensibilidad = recall_score(y_test, y_pred) #vp/vp+fn
+print("Sensibilidad del modelo") # vp/vp+fn
+print(sensibilidad)
+print()
 
-print("F1 score")
-f1Score = skM.f1_score(y_test,predicAr)
-print(f1Score)
+#El puntaje F1 es la medida armonica de la memoria y la precision,
+#con un puntuacion mas alta, mejor es el modelo.
+puntaje = f1_score(y_test, y_pred)
+print("medida armonica del modelo")
+print(puntaje)
+print()
 
-print("Accuracy")
-acurazi = skM.accuracy_score(y_test,predicAr)
-print(acurazi)
-
+print("Curva ROC")
+fpr, tpr, _ = skM.roc_curve(y_test,  y_pred)
+auc = skM.roc_auc_score(y_test, y_pred)
+plt.plot(fpr,tpr,label="data 1, auc="+str(auc))
+plt.legend(loc=4)
+plt.show() 
 
 print("\n")
 print("**************SVM******************")
-matriz = skM.confusion_matrix(y_test,predic)
-print("Matriz:")
+matriz = confusion_matrix(y_test, predic)
+print("Matriz de confusion")
 print(matriz)
+print()
 
-print("Presicion:")
-precision = skM.precision_score(y_test,predic)
+#Relacion entre las predicciones correctas y el numero total de predicciones
+#Con que frecuencia es correcto el clasificador
+exactitud = accuracy_score(y_test, predic)
+print("Exactitud del modelo") #vp+vn/vp+fp+fn+vn
+print(exactitud)
+print()
+
+#Relacion entre las predicciones correctas y el numero total de predicciones
+#correctas previstas, mide la precision del modelo a la hora de predecir casos positivos
+precision = precision_score(y_test, predic)
+print("Presicion del modelo")
 print(precision)
+print()
 
-print("Recall score:")
-recall = skM.recall_score(y_test,predic)
-print(recall)
+#Relacion entre las predicciones positivas correctas y el numero total de predicciones
+#positivas o cuan sensible es el modelo para detectar instancias positivas.
+sensibilidad = recall_score(y_test, predic) #vp/vp+fn
+print("Sensibilidad del modelo") # vp/vp+fn
+print(sensibilidad)
+print()
 
-print("F1 score")
-f1Score = skM.f1_score(y_test,predic)
-print(f1Score)
+#El puntaje F1 es la medida armonica de la memoria y la precision,
+#con un puntuacion mas alta, mejor es el modelo.
+puntaje = f1_score(y_test, predic)
+print("medida armonica del modelo")
+print(puntaje)
+print()
 
-print("Accuracy")
-acurazi = skM.accuracy_score(y_test,predic)
-print(acurazi)
 
-print("\nCurvas ROC")
-aucAr = skM.roc_auc_score(y_test, predicAr)
+print("Curvas ROC")
+aucAr = skM.roc_auc_score(y_test, y_pred)
 aucSVM = skM.roc_auc_score(y_test, predic)
 print("Arboles "+str(aucAr))
 print("SVM "+str(aucSVM))
 
-a_fpr, a_tpr, _ = skM.roc_curve(y_test,  predicAr)
+a_fpr, a_tpr, _ = skM.roc_curve(y_test,  y_pred)
 svm_fpr, svm_tpr, _ = skM.roc_curve(y_test, predic)
 
 plt.plot(a_fpr,a_tpr,label='auc Árbol de decisión= %0.3f' % aucAr)
@@ -127,3 +204,4 @@ plt.legend(loc=4)
 plt.xlabel('1-especificidad')
 plt.ylabel('Sensibilidad')
 plt.show()
+
